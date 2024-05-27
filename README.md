@@ -46,7 +46,6 @@ Make sure that RDN identifier for user accounts in OpenLDAP is set to `uid`.
             - LDAP-MAILCOW_API_KEY=<YOUR-MAILCOW-API-KEY>
             - LDAP-MAILCOW_SYNC_INTERVAL=300
             - LDAP-MAILCOW_LDAP_FILTER=(&(objectClass=person))
-            - LDAP-MAILCOW_SOGO_LDAP_FILTER=objectClass='person'
             
     ```
 
