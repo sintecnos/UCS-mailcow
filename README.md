@@ -1,4 +1,4 @@
-# OpenLDAP-mailcow
+# OpenLDAP-mailcow for Univention UCS 
 
 Provision OpenLDAP accounts in mailcow-dockerized and enable LDAP authentication through [Dovecot's LDAP integration](https://doc.dovecot.org/configuration_manual/authentication/ldap/).
 
@@ -45,34 +45,12 @@ Make sure that RDN identifier for user accounts in OpenLDAP is set to `uid`.
             - LDAP-MAILCOW_API_HOST=https://mail.your-domain.com
             - LDAP-MAILCOW_API_KEY=<YOUR-MAILCOW-API-KEY>
             - LDAP-MAILCOW_SYNC_INTERVAL=300
-            #- LDAP-MAILCOW_LDAP_FILTER=(&(objectClass=posixAccount))
-            #- LDAP-MAILCOW_SOGO_LDAP_FILTER=objectClass='posixAaccount'
-            - LDAP-MAILCOW_LDAP_FILTER=(&(objectClass=inetOrgPerson))
-            - LDAP-MAILCOW_SOGO_LDAP_FILTER=objectClass='inetOrgPerson'
+            - LDAP-MAILCOW_LDAP_FILTER=(&(objectClass=person))
+            - LDAP-MAILCOW_SOGO_LDAP_FILTER=objectClass='person'
             
     ```
-3. LDAP template fine-tuning
 
-Change the following line in `./templates/dovecot/ldap/passdb.conf` to fit your LDAP setup:
-```
-...
-auth_bind_userdn = uid=%n,ou=People,dc=next-boss,dc=eu
-...
-```
-Container internally uses the following configuration templates:
-
-* SOGo: `/templates/sogo/plist_ldap`
-* dovecot: `/templates/dovecot/ldap/passdb.conf`
-
-These files have been tested against a docker-compose stack comprising of 
-1. [Bitnami's OpenLDAP Docker image](https://hub.docker.com/r/bitnami/openldap/) & 
-2. [LDAP Account Manager (LAM)](https://hub.docker.com/r/ldapaccountmanager/lam) 
-
-running on Debian 11.
-
-If necessary, you can edit and remount them through docker volumes. Some documentation on these files can be found here: [dovecot](https://doc.dovecot.org/configuration_manual/authentication/ldap/), [SOGo](https://sogo.nu/files/docs/SOGoInstallationGuide.html#_authentication_using_ldap)
-
-4. Configure environmental variables:
+Environmental variables:
 
     * `LDAP-MAILCOW_LDAP_URI` - LDAP (e.g., Active Directory) URI (must be reachable from within the container). The URIs are in syntax `protocol://host:port`. For example `ldap://localhost` or `ldaps://secure.domain.org`
     * `LDAP-MAILCOW_LDAP_BASE_DN` - base DN where user accounts can be found
@@ -85,9 +63,19 @@ If necessary, you can edit and remount them through docker volumes. Some documen
         * `LDAP-MAILCOW_LDAP_FILTER` - LDAP filter to apply, defaults to `(&(objectClass=user)(objectCategory=person))`
         * `LDAP-MAILCOW_SOGO_LDAP_FILTER` - LDAP filter to apply for SOGo ([special syntax](https://sogo.nu/files/docs/SOGoInstallationGuide.html#_authentication_using_ldap)), defaults to `objectClass='user' AND objectCategory='person'`
 
-5. Start additional container: `docker-compose up -d ldap-mailcow`
-6. Check logs `docker-compose logs ldap-mailcow`
-7. Restart dovecot and SOGo if necessary `docker-compose restart sogo-mailcow dovecot-mailcow`
+Container internally uses the following configuration templates:
+
+* SOGo: `/templates/sogo/plist_ldap`
+* dovecot: `/templates/dovecot/ldap/passdb.conf`
+
+These files have been tested against a UNIVENTION UCS server
+
+If necessary, you can edit and remount them through docker volumes. Some documentation on these files can be found here: [dovecot](https://doc.dovecot.org/configuration_manual/authentication/ldap/), [SOGo](https://sogo.nu/files/docs/SOGoInstallationGuide.html#_authentication_using_ldap)
+
+
+3. Start additional container: `docker-compose up -d ldap-mailcow`
+4. Check logs `docker-compose logs ldap-mailcow`
+5. Restart dovecot and SOGo if necessary `docker-compose restart sogo-mailcow dovecot-mailcow`
 
 ## Limitations
 
@@ -127,4 +115,4 @@ If you enjoy using this project and would like to show your support, please cons
 
 
 ## Credits
-This is a fork of the [openldap-mailcow project](https://github.com/Programmierus/ldap-mailcow) with slight modifications to work with OpenLDAP out of the box.
+This is a fork of original [openldap-mailcow project](https://github.com/nextBOSS-Capabilities/openldap-mailcow) with slight modifications to work with UCS's OpenLDAP out of the box.

@@ -41,20 +41,22 @@ def sync():
     ldap_results = ldap_connector.search_s(config['LDAP_BASE_DN'], ldap.SCOPE_SUBTREE, 
                 config['LDAP_FILTER'], 
                 ['mail', 'cn', 'uid'])
-                # ['mail', 'cn', 'userAccountControl'])
 
-    ldap_results = map(lambda x: (
-        x[1]['mail'][0].decode(),
-        x[1]['cn'][0].decode(),
-        True), ldap_results)
-        # False if int(x[1]['userAccountControl'][0].decode()) & 0b10 else True), ldap_results)
-    # print("ldap_results: " + ldap_results)
+
+    accounts = []
+    for item in ldap_results:
+      mail = item[1].get('mail', None)
+      if (mail) is None:
+        continue
+      mail = mail[0].decode()
+      name = item[1]['cn'][0].decode()
+      elem = [mail,name,True]
+      accounts.append(elem)
+    ldap_results = accounts
 
     filedb.session_time = datetime.datetime.now()
 
     for (email, ldap_name, ldap_active) in ldap_results:
-        print("Email: " + email)
-        print("ldap_name: " + ldap_name)
         (db_user_exists, db_user_active) = filedb.check_user(email)
         (api_user_exists, api_user_active, api_name) = api.check_user(email)
 
