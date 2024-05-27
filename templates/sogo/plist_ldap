@@ -16,6 +16,9 @@
     <key>UIDFieldName</key>
     <string>uid</string>
 
+    <key>IMAPLoginFieldName</key>
+    <string>mail</string>
+
     <key>baseDN</key>
     <string>$ldap_base_dn</string>
 
