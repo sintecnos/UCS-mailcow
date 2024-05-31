@@ -11,10 +11,16 @@
     <string>cn</string>
 
     <key>IDFieldName</key>
-    <string>uid</string>
+    <string>mail</string>
 
     <key>UIDFieldName</key>
     <string>uid</string>
+
+    <key>bindFields</key>
+    <array>
+        <string>uid</string>
+        <string>mail</string>
+    </array>
 
     <key>IMAPLoginFieldName</key>
     <string>mail</string>
@@ -34,11 +40,14 @@
     <key>canAuthenticate</key>
     <string>YES</string>
 
+    <key>bindAsCurrentUser</key>
+    <string>YES</string>
+
     <key>filter</key>
     <string>$sogo_ldap_filter</string>
 
     <key>isAddressBook</key>
-    <string>NO</string>
+    <string>YES</string>
 
     <key>displayName</key>
     <string>OpenLDAP</string>
