@@ -1,0 +1,12 @@
+
+# SINTECNOS CUSTOM
+LDAP_URI=ldap://192.179.1.1:389
+LDAP_BASE_DN=CN=users,DC=domain,DC=local
+LDAP_ADMIN_DN=UID=administrator,CN=users,DC=domain,DC=local
+LDAP_ADMIN_PW=i<SUPERSecretPassword>
+API_HOST=https://APISERVER
+API_KEY=<Generated Key>
+SYNC_INTERVAL=300
+LDAP_FILTER=(objectClass=person)
+SOGO_LDAP_FILTER=(objectClass=person)
+
