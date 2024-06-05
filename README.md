@@ -1,6 +1,10 @@
 # OpenLDAP-mailcow for Univention UCS 
 
-Provision OpenLDAP accounts in mailcow-dockerized and enable LDAP authentication through [Dovecot's LDAP integration](https://doc.dovecot.org/configuration_manual/authentication/ldap/).
+Provision Univention UCS doamin controller accounts as local mailboxes, using LDAP password to permit user access. As it is not possible (as far as I know) to retrieve LDAP password from server, it is mandatory to manage users' password directly from mailcow. In each run, syncer looks for new mailboxes and if not presents, it creates one, together with user's credentials, whose login is email and password is randomly generated. For this reason the user needs to enter the account (also via admin) and change password: this operation will modify the LDAP one as well, syncing the two instances.
+
+The whole repo is a fork of original [openldap-mailcow project](https://github.com/nextBOSS-Capabilities/openldap-mailcow) with some deep modifications to work with UCS's OpenLDAP, almost out of the box. The given project is, at his time, a fork of a more general LDAP project with Active Directory. All modified files in this project should be imported in the other one, in case one needs to use AD.
+
+To recap, main modifications are about software changes inside mailcow in specific places of password management, beside LDAP connection.
 
 * [How does it work](#how-does-it-work)
 * [Usage](#usage)
@@ -15,7 +19,7 @@ Provision OpenLDAP accounts in mailcow-dockerized and enable LDAP authentication
 
 ## How does it work
 
-A python script periodically checks and creates new LDAP accounts and deactivates deleted and disabled ones with mailcow API. It also enables LDAP authentication in SOGo and dovecot.
+A python script periodically checks and creates new LDAP accounts and deactivates deleted and disabled ones with mailcow API. It also enables LDAP authentication in SOGo and dovecot. In order to permit also calendar and contacts sync, you need to create inside Mailcow the same password of LDAP
 
 ## Usage
 
@@ -23,33 +27,16 @@ A python script periodically checks and creates new LDAP accounts and deactivate
 Make sure that RDN identifier for user accounts in OpenLDAP is set to `uid`.
 
 ### Setup
-1. Create a `data/ldap` directory. SQLite database for synchronization will be stored there.
-2. Extend your `docker-compose.override.yml` with an additional container:
-
-    ```yaml
-     ldap-mailcow:
-        image: sintecnos/ucs-mailcow
-        network_mode: host
-        container_name: mailcowcustomized_ldap-mailcow
-        depends_on:
-            - nginx-mailcow
-        volumes:
-            - ./data/ldap:/db:rw
-            - ./data/conf/dovecot:/conf/dovecot:rw
-            - ./data/conf/sogo:/conf/sogo:rw
-        environment:
-            - LDAP-MAILCOW_LDAP_URI=ldap(s)://ldap.your-domain.com
-            - LDAP-MAILCOW_LDAP_BASE_DN=DC=your-domain,DC=com
-            - LDAP-MAILCOW_LDAP_BIND_DN=CN=admin,DC=your-domain,DC=com
-            - LDAP-MAILCOW_LDAP_BIND_DN_PASSWORD=Ldap_BIND_passw0rd
-            - LDAP-MAILCOW_API_HOST=https://mail.your-domain.com
-            - LDAP-MAILCOW_API_KEY=<YOUR-MAILCOW-API-KEY>
-            - LDAP-MAILCOW_SYNC_INTERVAL=300
-            - LDAP-MAILCOW_LDAP_FILTER=(&(objectClass=person))
-            
-    ```
-
-Environmental variables:
+1. Follow [Mailcow-dockerized instruction](https://github.com/mailcow/mailcow-dockerized) for docker install in order to retrieve and create mailcow system.
+2. Run the "generate_config.sh" script, that will create the "mailcow.conf" file for the given setup
+3. Clone this project inside folder (relative path) data/ldapsync. This means that all pulled file from repo should reside in "data/ldapsync" folder!!
+4. Append "data/ldapsync/mailcow-dockerized/mailcow.conf.addon" file to mailcow.conf previously created
+5. Start mailcow using the usual "docker compose pull" & "docker compose up -d" in order to generate the default mailcow system and log into mailcow dashboard
+6. In "system->configuration" look for API (it's a folded parameter set), open it with the "+" and inside there, under read-write accesws, generate a new key, keep it for later
+7. In eMail-> Configuration" create a new domain, with the same domain name of LDAP emails
+8. In UCS mind to add the field "email" under each needed user, tab "samba"(it doesn't worj with "primaryemailaddress")
+9. Add the snippet in data/docker-compose-override.yml inside the original docker-compose.yml in your root path, just at the end of all services, abd before "network" decalration
+10. Modify the mailcow.conf added snippet using the following variable meaninigs:
 
     * `LDAP-MAILCOW_LDAP_URI` - LDAP (e.g., Active Directory) URI (must be reachable from within the container). The URIs are in syntax `protocol://host:port`. For example `ldap://localhost` or `ldaps://secure.domain.org`
     * `LDAP-MAILCOW_LDAP_BASE_DN` - base DN where user accounts can be found
@@ -58,23 +45,12 @@ Environmental variables:
     * `LDAP-MAILCOW_API_HOST` - mailcow API url. Make sure it's enabled and accessible from within the container for both reads and writes
     * `LDAP-MAILCOW_API_KEY` - mailcow API key (read/write)
     * `LDAP-MAILCOW_SYNC_INTERVAL` - interval in seconds between LDAP synchronizations
-    * **Optional** LDAP filters (see example above). SOGo uses special syntax, so you either have to **specify both or none**:
-        * `LDAP-MAILCOW_LDAP_FILTER` - LDAP filter to apply, defaults to `(&(objectClass=user)(objectCategory=person))`
-        * `LDAP-MAILCOW_SOGO_LDAP_FILTER` - LDAP filter to apply for SOGo ([special syntax](https://sogo.nu/files/docs/SOGoInstallationGuide.html#_authentication_using_ldap)), defaults to `objectClass='user' AND objectCategory='person'`
+    * `LDAP-MAILCOW_LDAP_FILTER` - LDAP filter to apply, defaults to `(&(objectClass=user)(objectCategory=person))`
+    * `LDAP-MAILCOW_SOGO_LDAP_FILTER` - LDAP filter to apply for SOGo ([special syntax](https://sogo.nu/files/docs/SOGoInstallationGuide.html#_authentication_using_ldap)), defaults to `objectClass='user' AND objectCategory='person'`
 
-Container internally uses the following configuration templates:
-
-* SOGo: `/templates/sogo/plist_ldap`
-* dovecot: `/templates/dovecot/ldap/passdb.conf`
-
-These files have been tested against a UNIVENTION UCS server
-
-If necessary, you can edit and remount them through docker volumes. Some documentation on these files can be found here: [dovecot](https://doc.dovecot.org/configuration_manual/authentication/ldap/), [SOGo](https://sogo.nu/files/docs/SOGoInstallationGuide.html#_authentication_using_ldap)
-
-
-3. Start additional container: `docker-compose up -d ldap-mailcow`
-4. Check logs `docker-compose logs ldap-mailcow`
-5. Restart dovecot and SOGo if necessary `docker-compose restart sogo-mailcow dovecot-mailcow`
+11. Build additional container: `docker compose build ldap`
+12. Start the new service: `docker compose up ldap -d`
+13. Restart dovecot and SOGo if necessary `docker compose restart sogo-mailcow dovecot-mailcow`
 
 ## Limitations
 
@@ -97,20 +73,6 @@ As a side-effect, It will also allow logging into mailcow UI using mailcow app p
 ### Two-way sync
 
 Users from your LDAP directory will be added (and deactivated if disabled/not found) to your mailcow database. Not vice-versa, and this is by design.
-
-## Customizations and Integration support
-
-External authentication (identity federation) is an enterprise feature [for mailcow](https://github.com/mailcow/mailcow-dockerized/issues/2316#issuecomment-491212921). That’s why I developed an external solution, and it is unlikely that it’ll be ever directly integrated into mailcow.
-
-I’ve created this tool because I needed it for my regular work. You are free to use it for commercial needs. Please understand that I can work on issues only if they fall within the scope of my current work interests or if I’ll have some available free time (never happened for many years). I’ll do my best to review submitted PRs ASAP, though.
-
-**You can always [contact me](mailto:lhc@next-boss.eu) to help you with the integration or for custom modifications on a paid basis. My current hourly rate (ActivityWatch tracked) is 120,-€ with 3h minimum commitment.**
-
-## Buy Me a ☕
-
-If you enjoy using this project and would like to show your support, please consider buying me a coffee ☕. As an open source developer, I rely on the support of the community to keep this project going.
-
-[:heart: Sponsor](https://github.com/sponsors/l4b4r4b4b4)
 
 
 ## Credits

@@ -1,6 +1,6 @@
 
 # SINTECNOS CUSTOM
-LDAP_URI=ldap://192.179.1.1:389
+LDAP_URI=ldap://192.168.1.1:389
 LDAP_BASE_DN=CN=users,DC=domain,DC=local
 LDAP_ADMIN_DN=UID=administrator,CN=users,DC=domain,DC=local
 LDAP_ADMIN_PW=i<SUPERSecretPassword>

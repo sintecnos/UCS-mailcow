@@ -1,0 +1,35 @@
+    ldap:
+      build: ./data/ldapsync
+      image: ldap
+      network_mode: host
+      container_name: ldap
+      depends_on:
+        - unbound-mailcow
+        - mysql-mailcow
+        - redis-mailcow
+        - clamd-mailcow
+        - rspamd-mailcow
+        - php-fpm-mailcow
+        - sogo-mailcow
+        - dovecot-mailcow
+        - postfix-mailcow
+        - memcached-mailcow
+        - nginx-mailcow
+        - acme-mailcow
+        - netfilter-mailcow
+        - watchdog-mailcow
+        - dockerapi-mailcow
+        - solr-mailcow
+      volumes:
+          - ./data/ldap:/db:rw
+          - ./data/conf:/app/conf
+      environment:
+          - LDAP-MAILCOW_LDAP_URI=${LDAP_URI}
+          - LDAP-MAILCOW_LDAP_BASE_DN=${LDAP_BASE_DN}
+          - LDAP-MAILCOW_LDAP_BIND_DN=${LDAP_ADMIN_DN}
+          - LDAP-MAILCOW_LDAP_BIND_DN_PASSWORD=${LDAP_ADMIN_PW}
+          - LDAP-MAILCOW_API_HOST=${API_HOST}
+          - LDAP-MAILCOW_API_KEY=${API_KEY}
+          - LDAP-MAILCOW_SYNC_INTERVAL=${SYNC_INTERVAL}
+          - LDAP-MAILCOW_LDAP_FILTER=${LDAP_FILTER}
+          - LDAP-MAILCOW_SOGO_LDAP_FILTER=${SOGO_LDAP_FILTER}
